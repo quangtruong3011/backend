@@ -11,6 +11,7 @@ import tableModel from "../../models/table.model.js";
 import restaurantModel from "../../models/restaurant.model.js";
 import postModel from "../../models/post.model.js";
 import adminModel from "../../models/admin.model.js";
+import mongoose from "mongoose";
 
 cloudinary.config({
     cloud_name: process.env.CLOUD_NAME,
@@ -19,31 +20,39 @@ cloudinary.config({
 });
 
 const createRestaurant = asyncHandler(async (req, res) => {
-    const admin = await adminModel.findOne({ _id: req.user });
+    const { restaurantName, address, province, district, phoneNumber, openTime, closeTime, description } = req.body;
+    const imageFile = req.file;
 
-    const timeDifference = admin.loginTime.getTime() - admin.loginFirstTime.getTime();
+    const { id } = req.user;
 
-    if (timeDifference < 1000) {
-        const newRestaurant = new restaurantModel({
-            restaurantId: crypto.randomUUID(),
-            restaurantName: "",
-            address: "",
-            openTime: "",
-            closedTime: "",
-            description: "",
-            imageUrl: "",
-        });
+    const imageResult = await cloudinary.uploader.upload(imageFile.path, {
+        resource_type: "image",
+        folder: "Menu",
+    });
 
-        await newRestaurant.save();
+    fs.unlinkSync(imageFile.path);
 
-        res.status(201).send({
-            message: "Create restaurant successfully",
-        });
-    } else {
-        res.status(400).send({
-            message: "Cannot create restaurant",
-        });
-    }
+    const imageUrl = imageResult.secure_url;
+
+    const newRestaurant = new restaurantModel({
+        restaurantId: crypto.randomUUID(),
+        restaurantName: restaurantName,
+        province: province,
+        district: district,
+        address: address,
+        phoneNumber: phoneNumber,
+        openTime: openTime,
+        closeTime: closeTime,
+        description: description,
+        imageUrl: imageUrl,
+        createBy: id,
+    });
+
+    await newRestaurant.save();
+
+    res.status(201).send({
+        message: "Create restaurant successfully",
+    });
 });
 
 const createMenu = asyncHandler(async (req, res) => {
@@ -84,6 +93,7 @@ const createMenu = asyncHandler(async (req, res) => {
 
 const createEmployee = asyncHandler(async (req, res) => {
     const { fullName, gender, phoneNumber, password } = req.body;
+    const { id } = req.user;
 
     const existingEmployee = await employeeModel.findOne({ phoneNumber: phoneNumber });
 
@@ -101,6 +111,7 @@ const createEmployee = asyncHandler(async (req, res) => {
         gender,
         phoneNumber,
         password: hash,
+        createBy: id,
     });
 
     await newEmployee.save();
@@ -110,18 +121,25 @@ const createEmployee = asyncHandler(async (req, res) => {
     });
 });
 
-const createTable = asyncHandler(async (req, res) => {
-    const { name } = req.body;
-    const table = await tableModel.findOne({ name: name });
 
-    if (table) {
+const createTable = asyncHandler(async (req, res) => {
+    const { id } = req.user;
+    const restaurant = await restaurantModel.findOne({ createBy: id });
+
+    const { tableName, maxPersons } = req.body;
+
+    const table = await tableModel.find({});
+
+    if (tableName === table.tableName) {
         res.status(401);
         throw new Error("The table already exists");
     }
 
     const newTable = new tableModel({
-        tableId: crypto.randomUUID(),
-        name: name,
+        tableId: new mongoose.Types.ObjectId,
+        tableName: tableName,
+        maxPersons: maxPersons,
+        ofRestaurant: restaurant.restaurantId,
     });
 
     await newTable.save();
@@ -161,6 +179,26 @@ const createPost = asyncHandler(async (req, res) => {
         message: "Create new post successfully"
     });
 });
+
+const findBooking = asyncHandler(async (req, res) => {
+    const { customerName, phoneNumber } = req.body;
+
+    const booking = await bookingModel.findOne({
+        customerName: customerName,
+        phoneNumber: phoneNumber,
+    });
+
+    if (!booking || booking.length === 0) {
+        res.status(404);
+        throw new Error("Booking not found");
+    }
+    
+    res.status(200).send({
+        message: "Get info booking successfully",
+        data: booking,
+    });
+});
+
 
 const create = {
     createRestaurant,

@@ -4,7 +4,11 @@ const tableSchema = new mongoose.Schema({
     tableId: {
         type: String,
     },
-    name: {
+    tableName: {
+        type: String,
+        required: true,
+    },
+    maxPersons: {
         type: Number,
         required: true,
     },
@@ -12,6 +16,12 @@ const tableSchema = new mongoose.Schema({
         type: String,
         enum: ["ready", "in use", "reserved"],
         default: "ready",
+    },
+    ofRestaurant: {
+        type: String,
+    },
+    ofBooking: {
+        type: String,
     },
 });
 

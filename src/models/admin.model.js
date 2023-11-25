@@ -31,14 +31,6 @@ const adminSchema = new mongoose.Schema({
     photo: {
         type: String,
     },
-    loginFirstTime: {
-        type: Date,
-        default: Date.now(),
-    },
-    loginTime: {
-        type: Date,
-        default: Date.now(),
-    }
 });
 
 const adminModel = mongoose.model("Admin", adminSchema);

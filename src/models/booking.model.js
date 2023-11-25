@@ -21,18 +21,29 @@ const bookingSchema = new mongoose.Schema({
         required: true,
     },
     customerNumber: {
-        type: String,
+        type: Number,
         required: true,
     },
-    menuBooking: [{
-        item: {
+    menu: [{
+        productId: {
             type: String,
         },
         quantity: {
             type: Number,
-            default: 1,
+            default: 0,
         },
     }],
+    total: {
+        type: Number,
+    },
+    active: {
+        type: Boolean,
+        default: true,
+    },
+    checkIn: {
+        type: Boolean,
+        default: false,
+    },
     createAt: {
         type: Date,
         default: Date.now(),
@@ -40,6 +51,9 @@ const bookingSchema = new mongoose.Schema({
     ofRestaurant: {
         type: String,
     },
+    tableId: [{
+        type: String,
+    }],
 });
 
 const bookingModel = mongoose.model("Booking", bookingSchema);
