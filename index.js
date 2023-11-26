@@ -7,7 +7,7 @@ import { errorHandlerMiddleware } from "./src/middlewares/error.middleware.js";
 
 const app = express();
 
-const whitelist = ["https://backend-9kwk.onrender.com", "http://localhost:3000", "https://dashboard-huj8.onrender.com"];
+const whitelist = ["http://localhost:3000", "https://admin-dashboard-gamma-six.vercel.app/"];
 
 const corsOptions = {
     origin: function (origin, callback) {
