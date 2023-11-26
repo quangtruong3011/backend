@@ -7,7 +7,7 @@ import { errorHandlerMiddleware } from "./src/middlewares/error.middleware.js";
 
 const app = express();
 
-const whitelist = ["http://localhost:3000", "https://admin-dashboard-gamma-six.vercel.app/"];
+const whitelist = ["http://localhost:3000", "https://dashboard-taupe-chi.vercel.app/"];
 
 const corsOptions = {
     origin: function (origin, callback) {
