@@ -7,7 +7,7 @@ import { errorHandlerMiddleware } from "./src/middlewares/error.middleware.js";
 
 const app = express();
 
-const whitelist = ["https://backend-9kwk.onrender.com"];
+const whitelist = ["https://backend-9kwk.onrender.com", "http://localhost:3000", "https://dashboard-huj8.onrender.com"];
 
 const corsOptions = {
     origin: function (origin, callback) {
@@ -22,7 +22,7 @@ const corsOptions = {
 connectToDatabase();
 
 app.use(express.json());
-app.use(cors("*"));
+app.use(cors(corsOptions));
 
 app.use("/api", router);
 
