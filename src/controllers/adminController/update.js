@@ -8,6 +8,7 @@ import tableModel from "../../models/table.model.js";
 import mongoose from "mongoose";
 import moment from "moment/moment.js";
 import { log, table } from "console";
+import postModel from "../../models/post.model.js";
 
 cloudinary.config({
     cloud_name: process.env.CLOUD_NAME,
@@ -90,6 +91,12 @@ const updateProduct = asyncHandler(async (req, res) => {
 const checkIn = asyncHandler(async (req, res) => {
     const bookingId = req.params.id;
 
+    const updateBooking = await bookingModel.findOneAndUpdate(
+        { bookingId: bookingId },
+        { checkIn: true },
+        { new: true }
+    );
+
     if (!updateBooking) {
         res.status(404);
         throw new Error("Booking not found");
@@ -126,7 +133,7 @@ const order = asyncHandler(async (req, res) => {
 
     res.status(200).send({
         message: "Booking updated successfully",
-        booking,
+        data: booking,
     });
 });
 
@@ -147,7 +154,7 @@ const payment = asyncHandler(async (req, res) => {
 
     res.status(200).send({
         message: "Booking updated successfully",
-        booking,
+        data: booking,
     });
 });
 
@@ -213,13 +220,13 @@ const closeTable = asyncHandler(async (req, res) => {
         throw new Error("Table not found");
     }
 
-    const booking = await bookingModel.findOne({
-        tableId: table.tableId
-    });
+    // const booking = await bookingModel.findOne({
+    //     tableId: table.tableId
+    // });
 
     table.status = "ready";
 
-    await booking.deleteOne();
+    // await booking.deleteOne();
 
     await table.save();
 
@@ -248,6 +255,41 @@ const selectedTable = asyncHandler(async (req, res) => {
     });
 });
 
+const updatePost = asyncHandler(async (req, res) => {
+    const { id } = req.user;
+    const restaurant = await restaurantModel.findOne({ createBy: id });
+    const postId = req.params.id;
+    const post = await postModel.findOne({ postId: postId, ofRestaurant: restaurant.restaurantId });
+
+    if (!post) {
+        res.status(404);
+        throw new Error("Post not found");
+    }
+
+    const { content } = req.body;
+    const imageFile = req.file;
+
+    const imageResult = await cloudinary.uploader.upload(imageFile.path, {
+        resource_type: "image",
+        folder: "Menu",
+    });
+
+    fs.unlinkSync(imageFile.path);
+
+    const imageUrl = imageResult.secure_url;
+
+    const updatePost = await postModel.findOneAndUpdate(
+        { postId: postId },
+        { content: content, imageUrl: imageUrl },
+        { new: true }
+    );
+
+    res.status(200).send({
+        message: "Update post successfully",
+        data: updatePost,
+    });
+});
+
 const update = {
     updateRestaurant,
     updateProduct,
@@ -258,6 +300,7 @@ const update = {
     updateInfoTable,
     openTable,
     closeTable,
+    updatePost,
 }
 
 export default update;

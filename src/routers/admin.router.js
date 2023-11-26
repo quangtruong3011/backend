@@ -18,11 +18,13 @@ adminRouter.post("/post", authMiddleware, upload.single("image"), adminControlle
 adminRouter.get("/restaurant", authMiddleware, adminController.read.getRestaurants);
 adminRouter.get("/restaurant/:id", authMiddleware, adminController.read.getInfoRestaurant);
 adminRouter.get("/booking", authMiddleware, adminController.read.getAllBookings);
+adminRouter.get("/booking/:id", authMiddleware, adminController.read.getInfoBooking);
 adminRouter.get("/menu", authMiddleware, adminController.read.getAllMenus);
 adminRouter.get("/menu/:id", authMiddleware, adminController.read.getProduct);
 adminRouter.get("/employee", authMiddleware, adminController.read.getAllEmployees);
 adminRouter.get("/employee/:id", authMiddleware, adminController.read.getInfoEmployee);
 adminRouter.get("/post", authMiddleware, adminController.read.getAllPosts);
+adminRouter.get("/post/:id", authMiddleware, adminController.read.getInfoPost);
 adminRouter.get("/totals", authMiddleware, adminController.read.getTotals);
 adminRouter.get("/table", authMiddleware, adminController.read.getTables);
 adminRouter.get("/table/:id", authMiddleware, adminController.read.getInfoTable);
@@ -37,6 +39,7 @@ adminRouter.put("/booking/payment/:id", authMiddleware, adminController.update.p
 adminRouter.put("/table/:id", authMiddleware, adminController.update.updateInfoTable);
 adminRouter.put("/openTable/:id", authMiddleware, adminController.update.openTable);
 adminRouter.put("/closeTable/:id", authMiddleware, adminController.update.closeTable);
+adminRouter.put("/post/:id", authMiddleware, upload.single("image"), adminController.update.updatePost);
 
 // DELETE
 adminRouter.delete("/restaurant/:id", authMiddleware, adminController.remove.deleteRestaurant);
@@ -44,12 +47,16 @@ adminRouter.delete("/menu/:id", authMiddleware, adminController.remove.deleteMen
 adminRouter.delete("/post/:id", authMiddleware, adminController.remove.deletePost);
 adminRouter.delete("/booking/:id", authMiddleware, adminController.remove.deleteBooking);
 adminRouter.delete("/table/:id", authMiddleware, adminController.remove.deleteTable);
-// adminRouter.delete("/bookings", adminController.remove.deleteBookingAuto);
 
 // DELETE ALL
 adminRouter.delete("/delete/order", adminController.remove.deleteAllOrders);
 adminRouter.delete("/delete/menu", adminController.remove.deleteAllMenus);
 adminRouter.delete("/delete/employee", adminController.remove.deleteAllEmployees);
 adminRouter.delete("/delete/restaurant", adminController.remove.deleteAllRestaurants);
+adminRouter.delete("/delete/post", adminController.remove.deleteAllPosts);
+adminRouter.delete("/delete/table", adminController.remove.deletellTables);
+
+// DELETE AUTO
+adminRouter.delete("/auto", adminController.remove.deleteExpiredBookings);
 
 export default adminRouter;

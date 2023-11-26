@@ -6,7 +6,6 @@ import bookingModel from "../../models/booking.model.js";
 
 const getAllRestaurants = asyncHandler(async (req, res) => {
     const allRestaurants = await restaurantModel.find({});
-
     res.status(200).send({
         message: "Get all restaurant successfully",
         data: allRestaurants,
@@ -71,6 +70,7 @@ const getBookings = asyncHandler(async (req, res) => {
             restaurantName: restaurant.restaurantName,
             address: restaurant.address,
             restaurantImage: restaurant.imageUrl,
+            checkIn: booking.checkIn,
         };
 
         allBookings.push(bookingWithRestaurant);
@@ -78,7 +78,7 @@ const getBookings = asyncHandler(async (req, res) => {
 
     res.status(200).send({
         message: "Get bookings successfully",
-        data: allBookings,
+        data: allBookings.reverse(),
     });
 });
 

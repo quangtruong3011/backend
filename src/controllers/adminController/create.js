@@ -95,6 +95,8 @@ const createEmployee = asyncHandler(async (req, res) => {
     const { fullName, gender, phoneNumber, password } = req.body;
     const { id } = req.user;
 
+    const restaurant = await restaurantModel.findOne({ createBy: id });
+
     const existingEmployee = await employeeModel.findOne({ phoneNumber: phoneNumber });
 
     if (existingEmployee) {
@@ -112,6 +114,7 @@ const createEmployee = asyncHandler(async (req, res) => {
         phoneNumber,
         password: hash,
         createBy: id,
+        ofRestaurant: restaurant.restaurantId,
     });
 
     await newEmployee.save();
@@ -146,6 +149,7 @@ const createTable = asyncHandler(async (req, res) => {
 
     res.status(201).send({
         message: "Create new table successfully",
+        data: newTable
     });
 });
 
@@ -192,7 +196,7 @@ const findBooking = asyncHandler(async (req, res) => {
         res.status(404);
         throw new Error("Booking not found");
     }
-    
+
     res.status(200).send({
         message: "Get info booking successfully",
         data: booking,

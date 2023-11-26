@@ -40,6 +40,9 @@ const employeeSchema = new mongoose.Schema({
         ref: "Admin",
         required: true,
     },
+    ofRestaurant: {
+        type: String,
+    }
 });
 
 const employeeModel = mongoose.model("Employee", employeeSchema);

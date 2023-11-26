@@ -1,9 +1,9 @@
 import asyncHandler from "express-async-handler";
 import bcrypt from "bcrypt";
-import crypto from "crypto";
 import "dotenv/config";
 import jwt from "jsonwebtoken";
 import adminModel from "../../models/admin.model.js";
+import mongoose from "mongoose";
 
 const login = asyncHandler(async (req, res) => {
     const { email, password } = req.body;
@@ -22,7 +22,6 @@ const login = asyncHandler(async (req, res) => {
         throw new Error("Email or password is not correct");
     }
 
-    admin.loginTime = new Date();
     await admin.save();
 
     const jwtPayload = {
@@ -44,7 +43,7 @@ const login = asyncHandler(async (req, res) => {
 const register = asyncHandler(async (req, res) => {
     const { fullName, email, phoneNumber, password } = req.body;
 
-    const existingAdmin = await adminModel.findOne({ email: email });
+    const existingAdmin = await adminModel.findOne({ email: email, phoneNumber: phoneNumber });
 
     if (existingAdmin) {
         res.status(400);
@@ -55,7 +54,7 @@ const register = asyncHandler(async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, salt);
 
     const newAdmin = new adminModel({
-        adminId: crypto.randomUUID(),
+        adminId: new mongoose.Types.ObjectId,
         fullName,
         email,
         phoneNumber,

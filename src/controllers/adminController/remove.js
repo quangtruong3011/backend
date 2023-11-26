@@ -157,6 +157,37 @@ const deleteAllRestaurants = asyncHandler(async (req, res) => {
     });
 });
 
+const deleteAllPosts = asyncHandler(async (req, res) => {
+    await postModel.deleteMany({});
+
+    res.status(200).send({
+        message: "Delete all posts successfully",
+    });
+});
+
+const deletellTables = asyncHandler(async (req, res) => {
+    await tableModel.deleteMany({});
+
+    res.status(200).send({
+        message: "Delete all tables successfully",
+    });
+});
+
+const deleteExpiredBookings = asyncHandler(async (req, res) => {
+    const currentDate = new Date();
+    const thirtyMinutesAgo = new Date(currentDate.getTime() - 30 * 60 * 1000);
+    const expiredBookings = await bookingModel.find({
+        bookingDate: currentDate.toLocaleDateString(),
+        bookingTime: { $lt: thirtyMinutesAgo },
+    });
+    for (const booking of expiredBookings) {
+        await bookingModel.deleteOne({ bookingId: booking.bookingId });
+    }
+    res.status(200).send({
+        message: "Delete auto booking successfully",
+    });
+});
+
 
 const remove = {
     deleteRestaurant,
@@ -170,6 +201,9 @@ const remove = {
     deleteAllOrders,
     deleteAllEmployees,
     deleteAllRestaurants,
+    deleteAllPosts,
+    deletellTables,
+    deleteExpiredBookings,
 }
 
 export default remove;

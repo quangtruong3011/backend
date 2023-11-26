@@ -32,7 +32,7 @@ const getAllBookings = asyncHandler(async (req, res) => {
     const { id } = req.user;
     const restaurant = await restaurantModel.findOne({ createBy: id });
 
-    const bookings = await bookingModel.find({ ofRestaurant: restaurant.restaurantId });
+    const bookings = (await bookingModel.find({ ofRestaurant: restaurant.restaurantId }));
 
     res.status(200).send({
         message: "Get all booking successfully",
@@ -40,9 +40,28 @@ const getAllBookings = asyncHandler(async (req, res) => {
     });
 });
 
+const getInfoBooking = asyncHandler(async (req, res) => {
+    const bookingId = req.params.id;
+    const { id } = req.user;
+    const restaurant = await restaurantModel.findOne({ createBy: id });
+
+    const booking = await bookingModel.findOne({ bookingId: bookingId, ofRestaurant: restaurant.restaurantId });
+
+    if (!booking) {
+        res.status(404);
+        throw new Error("Booking not found");
+    }
+
+    res.status(200).send({
+        message: "Get booking successfully",
+        data: booking,
+    });
+});
+
 const getAllMenus = asyncHandler(async (req, res) => {
-    const createBy = req.user.id;
-    const allMenus = await menuModel.find({ createBy });
+    const { id } = req.user;
+    const restaurant = await restaurantModel.findOne({ createBy: id });
+    const allMenus = await menuModel.find({ ofRestaurant: restaurant.restaurantId });
 
     res.status(200).send({
         message: "Get all menu successfully",
@@ -91,7 +110,10 @@ const getInfoEmployee = asyncHandler(async (req, res) => {
 });
 
 const getAllPosts = asyncHandler(async (req, res) => {
-    const allPosts = await postModel.find({});
+    const { id } = req.user;
+    const restaurant = await restaurantModel.findOne({ createBy: id });
+    const allPosts = await postModel.find({ ofRestaurant: restaurant.restaurantId });
+    allPosts.reverse();
 
     res.status(200).send({
         message: "Get all posts successfully",
@@ -99,21 +121,51 @@ const getAllPosts = asyncHandler(async (req, res) => {
     });
 });
 
-const getTotals = asyncHandler(async (req, res) => {
+const getInfoPost = asyncHandler(async (req, res) => {
+    const postId = req.params.id;
     const { id } = req.user;
     const restaurant = await restaurantModel.findOne({ createBy: id });
-    if (!restaurant) {
+
+    const post = await postModel.findOne({ postId: postId, ofRestaurant: restaurant.restaurantId });
+
+    if (!post) {
         res.status(404);
-        throw new Error("Restaurant not found")
+        throw new Error("Post not found");
     }
-    const totalMenus = await menuModel.countDocuments({ ofRestaurant: restaurant.restaurantId });
-    const totalOrders = await bookingModel.countDocuments({ ofRestaurant: restaurant.restaurantId });
+
+    res.status(200).send({
+        message: "Get info post successfully",
+        data: post,
+    });
+});
+
+const getTotals = asyncHandler(async (req, res) => {
+    const { id: userId } = req.user;
+    const foundRestaurant = await restaurantModel.findOne({ createBy: userId });
+
+    if (!foundRestaurant) {
+        res.status(404);
+        throw new Error("Restaurant not found");
+    }
+
+    const menuCount = await menuModel.countDocuments({ ofRestaurant: foundRestaurant.restaurantId });
+    const orderCount = await bookingModel.countDocuments({ ofRestaurant: foundRestaurant.restaurantId });
+    const revenueSum = await bookingModel.find({ ofRestaurant: foundRestaurant.restaurantId });
+
+    let totalRevenue = 0;
+    revenueSum.forEach(booking => {
+        totalRevenue += booking.total;
+    });
+
+    const employeeCount = await employeeModel.countDocuments({ ofRestaurant: foundRestaurant.restaurantId });
 
     res.status(200).send({
         message: "Get total successfully",
         data: {
-            totalMenus,
-            totalOrders,
+            menuCount,
+            orderCount,
+            totalRevenue,
+            employeeCount
         }
     });
 });
@@ -154,11 +206,13 @@ const read = {
     getRestaurants,
     getInfoRestaurant,
     getAllBookings,
+    getInfoBooking,
     getAllMenus,
     getProduct,
     getAllEmployees,
     getInfoEmployee,
     getAllPosts,
+    getInfoPost,
     getTotals,
     getTables,
     getInfoTable,
