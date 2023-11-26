@@ -17,10 +17,6 @@ const corsOptions = {
             callback(new Error("Not allowed by CORS"));
         }
     },
-    methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
-    headers: "Origin, X-Requested-With, Content-Type, Accept, Authorization",
-    credentials: true,
-    keepHeadersOnError: true,
 };
 
 connectToDatabase();
