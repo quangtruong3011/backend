@@ -2,13 +2,14 @@ import mongoose from "mongoose";
 
 const tableSchema = new mongoose.Schema({
     tableId: {
-        type: String,
+        type: mongoose.Types.ObjectId,
+        auto: true,
     },
     tableName: {
         type: String,
         required: true,
     },
-    maxPersons: {
+    capacity: {
         type: Number,
         required: true,
     },
@@ -17,12 +18,28 @@ const tableSchema = new mongoose.Schema({
         enum: ["ready", "in use", "reserved"],
         default: "ready",
     },
-    ofRestaurant: {
-        type: String,
+    info: [
+        {
+            bookingDate: {
+                type: Date,
+            },
+            bookingTime: {
+                type: Date,
+            },
+            endTime: {
+                type: Date,
+            },
+            booking: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: "Booking",
+            },
+        }
+    ],
+    restaurant: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Restaurant",
     },
-    ofBooking: {
-        type: String,
-    },
+
 });
 
 const tableModel = mongoose.model("Table", tableSchema);

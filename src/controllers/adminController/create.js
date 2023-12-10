@@ -1,6 +1,5 @@
 import asyncHandler from "express-async-handler";
 import bcrypt from "bcrypt";
-import crypto from "crypto";
 import { v2 as cloudinary } from "cloudinary";
 import "dotenv/config";
 import fs from "fs";
@@ -10,8 +9,9 @@ import generateRandomCode from "../../utils/genderateRandomCode.js";
 import tableModel from "../../models/table.model.js";
 import restaurantModel from "../../models/restaurant.model.js";
 import postModel from "../../models/post.model.js";
-import adminModel from "../../models/admin.model.js";
-import mongoose from "mongoose";
+import bookingModel from "../../models/booking.model.js";
+import moment from "moment";
+
 
 cloudinary.config({
     cloud_name: process.env.CLOUD_NAME,
@@ -20,7 +20,7 @@ cloudinary.config({
 });
 
 const createRestaurant = asyncHandler(async (req, res) => {
-    const { restaurantName, address, province, district, phoneNumber, openTime, closeTime, description } = req.body;
+    const { restaurantName, address, province, district, ward, phoneNumber, openTime, closeTime, description } = req.body;
     const imageFile = req.file;
 
     const { id } = req.user;
@@ -35,10 +35,10 @@ const createRestaurant = asyncHandler(async (req, res) => {
     const imageUrl = imageResult.secure_url;
 
     const newRestaurant = new restaurantModel({
-        restaurantId: crypto.randomUUID(),
         restaurantName: restaurantName,
         province: province,
         district: district,
+        ward: ward,
         address: address,
         phoneNumber: phoneNumber,
         openTime: openTime,
@@ -72,7 +72,6 @@ const createMenu = asyncHandler(async (req, res) => {
     const imageUrl = imageResult.secure_url;
 
     const newMenuItem = new menuModel({
-        productId: crypto.randomUUID(),
         productName: productName,
         category: category,
         unit: unit,
@@ -81,28 +80,49 @@ const createMenu = asyncHandler(async (req, res) => {
         discount: discount,
         imageUrl: imageUrl,
         createBy: id,
-        ofRestaurant: restaurant.restaurantId,
+        restaurant: restaurant.restaurantId,
     });
 
     await newMenuItem.save();
 
     res.status(201).send({
         message: "Created menu item successfully",
+        data: newMenuItem,
     });
 });
 
+const getProductCategory = asyncHandler(async (req, res) => {
+    const { id } = req.user;
+    const { value } = req.body;
+    const restaurant = await restaurantModel.findOne({ createBy: id });
+
+    const menuItems = await menuModel.find({ restaurant: restaurant.restaurantId });
+
+    if (value === "1") {
+        res.status(200).send({
+            message: "Get product category successfully",
+            data: menuItems
+        });
+    } else if (value === "2") {
+        const food = menuItems.filter((item) => item.category === "food");
+        res.status(200).send({
+            message: "Get product category successfully",
+            data: food
+        });
+    } else if (value === "3") {
+        const drinks = menuItems.filter((item) => item.category === "drinks");
+        res.status(200).send({
+            message: "Get product category successfully",
+            data: drinks
+        });
+    }
+});
+
 const createEmployee = asyncHandler(async (req, res) => {
-    const { fullName, gender, phoneNumber, password } = req.body;
+    const { fullName, gender, username, password } = req.body;
     const { id } = req.user;
 
     const restaurant = await restaurantModel.findOne({ createBy: id });
-
-    const existingEmployee = await employeeModel.findOne({ phoneNumber: phoneNumber });
-
-    if (existingEmployee) {
-        res.status(401);
-        throw new Error("Employee already exists");
-    }
 
     const salt = await bcrypt.genSalt(10);
     const hash = await bcrypt.hash(password, salt);
@@ -111,38 +131,30 @@ const createEmployee = asyncHandler(async (req, res) => {
         employeeId: await generateRandomCode(),
         fullName,
         gender,
-        phoneNumber,
+        username,
         password: hash,
         createBy: id,
-        ofRestaurant: restaurant.restaurantId,
+        restaurant: restaurant.restaurantId,
     });
 
     await newEmployee.save();
 
     res.status(201).send({
         message: "Create new employee successfully",
+        data: newEmployee,
     });
 });
-
 
 const createTable = asyncHandler(async (req, res) => {
     const { id } = req.user;
     const restaurant = await restaurantModel.findOne({ createBy: id });
 
-    const { tableName, maxPersons } = req.body;
-
-    const table = await tableModel.find({});
-
-    if (tableName === table.tableName) {
-        res.status(401);
-        throw new Error("The table already exists");
-    }
+    const { tableName, capacity } = req.body;
 
     const newTable = new tableModel({
-        tableId: new mongoose.Types.ObjectId,
         tableName: tableName,
-        maxPersons: maxPersons,
-        ofRestaurant: restaurant.restaurantId,
+        capacity: capacity,
+        restaurant: restaurant.restaurantId,
     });
 
     await newTable.save();
@@ -154,7 +166,7 @@ const createTable = asyncHandler(async (req, res) => {
 });
 
 const createPost = asyncHandler(async (req, res) => {
-    const { content } = req.body;
+    const { title, content } = req.body;
     const imageFile = req.file;
 
     const { id } = req.user;
@@ -170,7 +182,7 @@ const createPost = asyncHandler(async (req, res) => {
     const imageUrl = imageResult.secure_url;
 
     const newPost = await postModel({
-        postId: crypto.randomUUID(),
+        title: title,
         content: content,
         imageUrl: imageUrl,
         createBy: id,
@@ -180,14 +192,58 @@ const createPost = asyncHandler(async (req, res) => {
     await newPost.save();
 
     res.status(201).send({
-        message: "Create new post successfully"
+        message: "Create new post successfully",
+        data: newPost,
     });
 });
+
+const createBooking = asyncHandler(async (req, res) => {
+    const { customerName, phoneNumber, customerNumber, table, menu } = req.body;
+    const { id } = req.user;
+
+    const restaurant = await restaurantModel.findOne({ createBy: id });
+    const allTables = await tableModel.find({ restaurant: restaurant.restaurantId });
+
+    const newBooking = new bookingModel({
+        customerName: customerName,
+        phoneNumber: phoneNumber,
+        customerNumber: customerNumber,
+        bookingDate: moment(),
+        bookingTime: moment(),
+        menu: menu,
+        table: table,
+        createBy: id,
+        checkIn: true,
+        restaurant: restaurant.restaurantId,
+    });
+
+    allTables.forEach((table) => {
+        req.body.table.forEach((item) => {
+            if (item == table.tableId) {
+                let infoBooking = {
+                    bookingDate: newBooking.bookingDate,
+                    bookingTime: newBooking.bookingTime,
+                    endTime: moment().add(12, "hours"),
+                }
+                table.info.push(infoBooking);
+                table.save();
+            }
+        })
+    });
+
+    await newBooking.save();
+
+    res.status(201).send({
+        message: "Create new booking successfully",
+        data: newBooking,
+    });
+});
+
 
 const findBooking = asyncHandler(async (req, res) => {
     const { customerName, phoneNumber } = req.body;
 
-    const booking = await bookingModel.findOne({
+    const booking = await bookingModel.find({
         customerName: customerName,
         phoneNumber: phoneNumber,
     });
@@ -207,9 +263,12 @@ const findBooking = asyncHandler(async (req, res) => {
 const create = {
     createRestaurant,
     createMenu,
+    getProductCategory,
     createEmployee,
     createTable,
     createPost,
+    createBooking,
+    findBooking,
 }
 
 export default create;

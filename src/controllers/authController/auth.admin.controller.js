@@ -4,6 +4,7 @@ import "dotenv/config";
 import jwt from "jsonwebtoken";
 import adminModel from "../../models/admin.model.js";
 import mongoose from "mongoose";
+import restaurantModel from "../../models/restaurant.model.js";
 
 const login = asyncHandler(async (req, res) => {
     const { email, password } = req.body;
@@ -61,7 +62,22 @@ const register = asyncHandler(async (req, res) => {
         password: hashedPassword,
     });
 
+    const newRestaurant = await restaurantModel.create({
+        restaurantName: "",
+        province: 0,
+        district: 0,
+        ward: 0,
+        address: "",
+        openTime: "",
+        closeTime: "",
+        description: "",
+        imageUrl: "",
+        createBy: newAdmin._id,
+    })
+
     await newAdmin.save();
+
+    await newRestaurant.save();
 
     res.status(201).send({
         message: "Register successfully"

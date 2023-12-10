@@ -28,9 +28,12 @@ const adminSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
-    photo: {
+    avatar: {
         type: String,
     },
+    coverPhoto: {
+        type: String,
+    }
 });
 
 const adminModel = mongoose.model("Admin", adminSchema);

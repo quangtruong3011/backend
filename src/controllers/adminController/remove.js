@@ -50,6 +50,8 @@ const deleteEmployee = asyncHandler(async (req, res) => {
         res.status(404).send({ message: "Employee not found" });
     }
 
+    await employee.deleteOne();
+
     res.status(200).send({
         message: "Delete employee successfully",
     });
@@ -82,12 +84,6 @@ const deleteBooking = asyncHandler(async (req, res) => {
         throw new Error("Booking not found");
     }
 
-    const tableIds = booking.tableId.map((id) => id);
-    await tableModel.updateMany(
-        { tableId: { $in: tableIds } },
-        { $set: { status: "ready" } }
-    );
-
     await booking.deleteOne();
 
     res.status(200).send({
@@ -95,18 +91,6 @@ const deleteBooking = asyncHandler(async (req, res) => {
     });
 });
 
-const deleteBookingAuto = asyncHandler(async (req, res) => {
-    const expriredBooking = await bookingModel.find({
-        createAt: { $lt: new Date(Date.now() - 30 * 60 * 1000) },
-    });
-
-    for (const booking of expriredBooking) {
-        await bookingModel.findByIdAndDelete(booking._id);
-    }
-    res.status(200).send({
-        message: "Booking successfully deleted",
-    });
-});
 
 const deleteTable = asyncHandler(async (req, res) => {
     const tableId = req.params.id;
@@ -177,15 +161,15 @@ const deleteExpiredBookings = asyncHandler(async (req, res) => {
     const currentDate = new Date();
     const thirtyMinutesAgo = new Date(currentDate.getTime() - 30 * 60 * 1000);
     const expiredBookings = await bookingModel.find({
-        bookingDate: currentDate.toLocaleDateString(),
+        checkIn: false,
         bookingTime: { $lt: thirtyMinutesAgo },
     });
+
     for (const booking of expiredBookings) {
-        await bookingModel.deleteOne({ bookingId: booking.bookingId });
+        await bookingModel.deleteOne({ _id: booking._id });
     }
-    res.status(200).send({
-        message: "Delete auto booking successfully",
-    });
+
+    res.status(200).send({ message: "Delete auto booking successfully" });
 });
 
 
@@ -195,7 +179,6 @@ const remove = {
     deleteEmployee,
     deletePost,
     deleteBooking,
-    deleteBookingAuto,
     deleteTable,
     deleteAllMenus,
     deleteAllOrders,

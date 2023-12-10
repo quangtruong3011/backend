@@ -5,11 +5,25 @@ import bookingModel from "../../models/booking.model.js";
 import postModel from "../../models/post.model.js";
 import restaurantModel from "../../models/restaurant.model.js";
 import tableModel from "../../models/table.model.js";
+import adminModel from "../../models/admin.model.js";
+import mongoose from "mongoose";
+import moment from "moment";
+
+const getInfo = asyncHandler(async (req, res) => {
+    const { id } = req.user;
+
+    const admin = await adminModel.findOne({ _id: id });
+
+    res.status(200).send({
+        message: "Get info successfully",
+        data: admin
+    });
+});
 
 const getRestaurants = asyncHandler(async (req, res) => {
     const { id } = req.user;
 
-    const restaurant = await restaurantModel.find({ createBy: id });
+    const restaurant = await restaurantModel.findOne({ createBy: id });
 
     res.status(200).send({
         message: "Get restaurant successfully",
@@ -32,7 +46,7 @@ const getAllBookings = asyncHandler(async (req, res) => {
     const { id } = req.user;
     const restaurant = await restaurantModel.findOne({ createBy: id });
 
-    const bookings = (await bookingModel.find({ ofRestaurant: restaurant.restaurantId }));
+    const bookings = await bookingModel.find({ restaurant: restaurant.restaurantId });
 
     res.status(200).send({
         message: "Get all booking successfully",
@@ -45,7 +59,7 @@ const getInfoBooking = asyncHandler(async (req, res) => {
     const { id } = req.user;
     const restaurant = await restaurantModel.findOne({ createBy: id });
 
-    const booking = await bookingModel.findOne({ bookingId: bookingId, ofRestaurant: restaurant.restaurantId });
+    const booking = await bookingModel.findOne({ bookingId: bookingId, restaurant: restaurant.restaurantId });
 
     if (!booking) {
         res.status(404);
@@ -61,13 +75,14 @@ const getInfoBooking = asyncHandler(async (req, res) => {
 const getAllMenus = asyncHandler(async (req, res) => {
     const { id } = req.user;
     const restaurant = await restaurantModel.findOne({ createBy: id });
-    const allMenus = await menuModel.find({ ofRestaurant: restaurant.restaurantId });
+    const allMenus = await menuModel.find({ restaurant: restaurant.restaurantId });
 
     res.status(200).send({
         message: "Get all menu successfully",
         data: allMenus,
     });
 });
+
 
 const getProduct = asyncHandler(async (req, res) => {
     const productId = req.params.id;
@@ -86,7 +101,9 @@ const getProduct = asyncHandler(async (req, res) => {
 });
 
 const getAllEmployees = asyncHandler(async (req, res) => {
-    const allEmployees = await employeeModel.find({});
+    const { id } = req.user;
+    const restaurant = await restaurantModel.findOne({ createBy: id });
+    const allEmployees = await employeeModel.find({ restaurant: restaurant.restaurantId });
 
     res.status(200).send({
         message: "Get all employees successfully",
@@ -140,24 +157,24 @@ const getInfoPost = asyncHandler(async (req, res) => {
 });
 
 const getTotals = asyncHandler(async (req, res) => {
-    const { id: userId } = req.user;
-    const foundRestaurant = await restaurantModel.findOne({ createBy: userId });
+    const { id } = req.user;
+    const foundRestaurant = await restaurantModel.findOne({ createBy: id });
 
     if (!foundRestaurant) {
         res.status(404);
         throw new Error("Restaurant not found");
     }
 
-    const menuCount = await menuModel.countDocuments({ ofRestaurant: foundRestaurant.restaurantId });
-    const orderCount = await bookingModel.countDocuments({ ofRestaurant: foundRestaurant.restaurantId });
-    const revenueSum = await bookingModel.find({ ofRestaurant: foundRestaurant.restaurantId });
-
+    const menuCount = await menuModel.countDocuments({ restaurant: foundRestaurant.restaurantId });
+    const orderCount = await bookingModel.countDocuments({ restaurant: foundRestaurant.restaurantId });
+    const revenueSum = await bookingModel.find({ restaurant: foundRestaurant.restaurantId });
     let totalRevenue = 0;
-    revenueSum.forEach(booking => {
-        totalRevenue += booking.total;
-    });
-
-    const employeeCount = await employeeModel.countDocuments({ ofRestaurant: foundRestaurant.restaurantId });
+    for (const revenue of revenueSum) {
+        if (revenue?.total) {
+            totalRevenue += revenue.total;
+        }
+    }
+    const employeeCount = await employeeModel.countDocuments({ restaurant: foundRestaurant.restaurantId });
 
     res.status(200).send({
         message: "Get total successfully",
@@ -174,7 +191,7 @@ const getTables = asyncHandler(async (req, res) => {
     const { id } = req.user;
     const restaurant = await restaurantModel.findOne({ createBy: id });
 
-    const tables = await tableModel.find({ ofRestaurant: restaurant.restaurantId });
+    const tables = await tableModel.find({ restaurant: restaurant.restaurantId });
 
     if (!tables) {
         res.status(404);
@@ -202,7 +219,58 @@ const getInfoTable = asyncHandler(async (req, res) => {
     });
 });
 
+const getTableReady = asyncHandler(async (req, res) => {
+    const { id } = req.user;
+    const restaurant = await restaurantModel.findOne({ createBy: id });
+
+    const tables = await tableModel.find({ restaurant: restaurant.restaurantId, status: "ready" });
+
+    res.status(200).send({
+        message: "Get tables ready successfully",
+        data: tables
+    });
+});
+
+const findTableReady = asyncHandler(async (req, res) => {
+    const { id } = req.user;
+    const restaurant = await restaurantModel.findOne({ createBy: id });
+
+    const tables = await tableModel.find({ restaurant: restaurant.restaurantId });
+
+    const currentTime = moment();
+
+    let tableReady = [];
+
+    tables.forEach(table => {
+        table.info.forEach(info => {
+            const bookingTime = moment(info.bookingTime);
+            const hoursDiff = currentTime.diff(bookingTime, 'hours');
+
+            if (hoursDiff > 3 || table.status === "ready") {
+                tableReady.push(table);
+            }
+        });
+        // if (table.status === "ready") {
+        //     tableReady.push(table);
+        //     table.info.forEach(info => {
+        //         const bookingTime = moment(info.bookingTime);
+        //         const hoursDiff = currentTime.diff(bookingTime, 'hours');
+
+        //         if (hoursDiff > 3) {
+        //             tableReady.push(table);
+        //         }
+        //     });
+        // }
+    });
+
+    res.status(200).send({
+        message: "Get tables ready successfully",
+        data: tableReady
+    });
+});
+
 const read = {
+    getInfo,
     getRestaurants,
     getInfoRestaurant,
     getAllBookings,
@@ -216,6 +284,8 @@ const read = {
     getTotals,
     getTables,
     getInfoTable,
+    getTableReady,
+    findTableReady
 }
 
 export default read;

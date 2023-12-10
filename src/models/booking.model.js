@@ -2,27 +2,23 @@ import mongoose from "mongoose";
 
 const bookingSchema = new mongoose.Schema({
     bookingId: {
-        type: String,
+        type: mongoose.Types.ObjectId,
+        auto: true,
     },
     customerName: {
         type: String,
-        required: true,
     },
     phoneNumber: {
         type: String,
-        required: true,
     },
     bookingDate: {
-        type: String,
-        required: true,
+        type: Date,
     },
     bookingTime: {
-        type: String,
-        required: true,
+        type: Date,
     },
     customerNumber: {
         type: Number,
-        required: true,
     },
     menu: [{
         productId: {
@@ -30,8 +26,10 @@ const bookingSchema = new mongoose.Schema({
         },
         quantity: {
             type: Number,
-            default: 0,
         },
+    }],
+    table: [{
+        type: String,
     }],
     total: {
         type: Number,
@@ -48,12 +46,10 @@ const bookingSchema = new mongoose.Schema({
         type: Date,
         default: Date.now(),
     },
-    ofRestaurant: {
-        type: String,
+    restaurant: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Restaurant",
     },
-    tableId: [{
-        type: String,
-    }],
 });
 
 const bookingModel = mongoose.model("Booking", bookingSchema);

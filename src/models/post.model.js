@@ -2,6 +2,10 @@ import mongoose from "mongoose";
 
 const postSchema = new mongoose.Schema({
     postId: {
+        type: mongoose.Types.ObjectId,
+        auto: true,
+    },
+    title: {
         type: String,
     },
     content: {

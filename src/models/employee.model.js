@@ -20,7 +20,7 @@ const employeeSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
-    phoneNumber: {
+    username: {
         type: String,
         required: true,
     },
@@ -38,11 +38,11 @@ const employeeSchema = new mongoose.Schema({
     createBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Admin",
-        required: true,
     },
-    ofRestaurant: {
-        type: String,
-    }
+    restaurant: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Restaurant",
+    },
 });
 
 const employeeModel = mongoose.model("Employee", employeeSchema);

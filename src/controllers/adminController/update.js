@@ -4,11 +4,9 @@ import fs from "fs";
 import restaurantModel from "../../models/restaurant.model.js";
 import menuModel from "../../models/menu.model.js";
 import bookingModel from "../../models/booking.model.js";
-import tableModel from "../../models/table.model.js";
-import mongoose from "mongoose";
-import moment from "moment/moment.js";
-import { log, table } from "console";
 import postModel from "../../models/post.model.js";
+import tableModel from "../../models/table.model.js";
+import moment from "moment";
 
 cloudinary.config({
     cloud_name: process.env.CLOUD_NAME,
@@ -17,18 +15,10 @@ cloudinary.config({
 });
 
 const updateRestaurant = asyncHandler(async (req, res) => {
-    const restaurantId = req.params.id;
-    const { restaurantName, address, openTime, closeTime, description } = req.body;
-    const imageFile = req.file;
     const { id } = req.user;
 
-    const restaurant = await restaurantModel.findOne({ restaurantId: restaurantId, createBy: id });
-
-    if (!restaurant) {
-        return res.status(404).send({
-            message: "Restaurant not found",
-        });
-    }
+    const { restaurantName, province, district, ward, address, openTime, closeTime, description } = req.body;
+    const imageFile = req.file;
 
     const imageResult = await cloudinary.uploader.upload(imageFile.path, {
         resource_type: "image",
@@ -39,18 +29,24 @@ const updateRestaurant = asyncHandler(async (req, res) => {
 
     const imageUrl = imageResult.secure_url;
 
-    restaurant.restaurantName = restaurantName;
-    restaurant.address = address;
-    restaurant.openTime = openTime;
-    restaurant.closeTime = closeTime;
-    restaurant.description = description;
-    restaurant.imageUrl = imageUrl;
-    await restaurant.save();
+    const restaurant = await restaurantModel.updateOne({ createBy: id }, {
+        restaurantName: restaurantName,
+        province: province,
+        district: district,
+        ward: ward,
+        address: address,
+        openTime: openTime,
+        closeTime: closeTime,
+        description: description,
+        imageUrl: imageUrl,
+    });
 
     res.status(200).send({
         message: "Restaurant updated successfully",
+        data: restaurant,
     });
 });
+
 
 const updateProduct = asyncHandler(async (req, res) => {
     const productId = req.params.id;
@@ -83,10 +79,10 @@ const updateProduct = asyncHandler(async (req, res) => {
     await product.save();
 
     res.status(201).send({
-        message: "Update product successfully"
+        message: "Update product successfully",
+        data: product,
     });
 });
-
 
 const checkIn = asyncHandler(async (req, res) => {
     const bookingId = req.params.id;
@@ -133,116 +129,36 @@ const order = asyncHandler(async (req, res) => {
 
     res.status(200).send({
         message: "Booking updated successfully",
-        data: booking,
-    });
-});
-
-const payment = asyncHandler(async (req, res) => {
-    const bookingId = req.params.id;
-
-    const booking = await bookingModel.findOne({ bookingId: bookingId });
-
-    if (!booking) {
-        res.status(404).send("Booking not found");
-        return;
-    }
-
-    booking.total = req.body.total;
-    booking.active = false;
-
-    await booking.save();
-
-    res.status(200).send({
-        message: "Booking updated successfully",
-        data: booking,
-    });
-});
-
-const updateInfoTable = asyncHandler(async (req, res) => {
-    const tableId = req.params.id;
-
-    const updateTable = await tableModel.findOneAndUpdate(
-        { tableId: tableId },
-        { ...req.body },
-        { new: true }
-    );
-
-    if (!updateTable) {
-        res.status(404);
-        throw new Error("Table not found");
-    }
-
-    res.status(200).send({
-        message: "Update table successfully",
-    });
-});
-
-const openTable = asyncHandler(async (req, res) => {
-    const { id } = req.user;
-    const restaurant = await restaurantModel.findOne({ createBy: id });
-    const tableId = req.params.id;
-    const { customerName, phoneNumber } = req.body;
-    const table = await tableModel.findOne({ tableId: tableId });
-
-    if (!table) {
-        res.status(404);
-        throw new Error("Table not found");
-    }
-
-    const newBooking = new bookingModel({
-        bookingId: new mongoose.Types.ObjectId(),
-        customerName: customerName,
-        phoneNumber: phoneNumber,
-        bookingTime: moment().format("HH:mm A"),
-        bookingDate: moment().format("DD/MM/YYYY"),
-        customerNumber: table.maxPersons,
-        checkIn: true,
-        tableId: tableId,
-        ofRestaurant: restaurant.restaurantId,
-    });
-
-    table.status = "in use";
-
-    await table.save();
-    await newBooking.save();
-
-    res.status(200).send({
-        message: "Table updated successfully",
-    });
-});
-
-const closeTable = asyncHandler(async (req, res) => {
-    const tableId = req.params.id;
-    const table = await tableModel.findOne({ tableId: tableId });
-
-    if (!table) {
-        res.status(404);
-        throw new Error("Table not found");
-    }
-
-    // const booking = await bookingModel.findOne({
-    //     tableId: table.tableId
-    // });
-
-    table.status = "ready";
-
-    // await booking.deleteOne();
-
-    await table.save();
-
-    res.status(200).send({
-        message: "Table updated successfully",
+        data: booking.menu,
     });
 });
 
 const selectedTable = asyncHandler(async (req, res) => {
+    const { id } = req.user;
+    const restaurant = await restaurantModel.findOne({ createBy: id });
+    const tables = await tableModel.find({ restaurant: restaurant.restaurantId });
     const bookingId = req.params.id;
 
     const booking = await bookingModel.findOneAndUpdate(
         { bookingId: bookingId },
-        { tableId: req.body },
+        { table: req.body },
         { new: true }
     );
+
+    tables.forEach(table => {
+        booking.table.forEach(item => {
+            if (item == table.tableId) {
+                let infoBooking = {
+                    bookingDate: booking.bookingDate,
+                    bookingTime: booking.bookingTime,
+                    endTime: moment().add(12, "hours"),
+                    booking: booking.bookingId,
+                }
+                table.info.push(infoBooking);
+                table.save();
+            }
+        })
+    });
 
     if (!booking) {
         res.status(404);
@@ -252,6 +168,46 @@ const selectedTable = asyncHandler(async (req, res) => {
     res.status(200).send({
         message: "Update booking successfully",
         data: booking,
+    });
+});
+
+const pay = asyncHandler(async (req, res) => {
+    const { id } = req.user;
+    const restaurant = await restaurantModel.findOne({ createBy: id });
+    const bookingId = req.params.id;
+
+    const booking = await bookingModel.findOne({ bookingId: bookingId });
+    const tables = await tableModel.find({ restaurant: restaurant.restaurantId });
+
+    if (!booking) {
+        res.status(404);
+        throw new Error("Booking not found");
+    }
+
+    const updateBooking = await bookingModel.findOneAndUpdate(
+        { bookingId: bookingId },
+        {
+            active: false,
+            total: req.body.total,
+        },
+        { new: true }
+    );
+
+    tables.forEach(table => {
+        booking.table.forEach(item => {
+            if (item == table.tableId) {
+                table.info.map(info => {
+                    info.endTime = moment();
+                });
+                table.status = "ready";
+                table.save();
+            }
+        });
+    });
+
+    res.status(200).send({
+        message: "Update booking successfully",
+        data: updateBooking,
     });
 });
 
@@ -266,7 +222,6 @@ const updatePost = asyncHandler(async (req, res) => {
         throw new Error("Post not found");
     }
 
-    const { content } = req.body;
     const imageFile = req.file;
 
     const imageResult = await cloudinary.uploader.upload(imageFile.path, {
@@ -280,7 +235,11 @@ const updatePost = asyncHandler(async (req, res) => {
 
     const updatePost = await postModel.findOneAndUpdate(
         { postId: postId },
-        { content: content, imageUrl: imageUrl },
+        {
+            title: req.body.title,
+            content: req.body.content,
+            imageUrl: imageUrl,
+        },
         { new: true }
     );
 
@@ -290,17 +249,96 @@ const updatePost = asyncHandler(async (req, res) => {
     });
 });
 
+const updateAvatar = asyncHandler(async (req, res) => {
+    const { id } = req.user;
+
+    const imageFile = req.file;
+
+    const imageResult = await cloudinary.uploader.upload(imageFile.path, {
+        resource_type: "image",
+        folder: "Avatar",
+    });
+
+    fs.unlinkSync(imageFile.path);
+
+    const imageUrl = imageResult.secure_url;
+
+    const updateAdmin = await restaurantModel.findOneAndUpdate(
+        { _id: id },
+        { avatar: imageUrl },
+        { new: true }
+    );
+
+    res.status(200).send({
+        message: "Update avatar successfully",
+        data: updateAdmin.avatar,
+    });
+});
+
+const updateCover = asyncHandler(async (req, res) => {
+    const { id } = req.user;
+
+    const imageFile = req.file;
+
+    const imageResult = await cloudinary.uploader.upload(imageFile.path, {
+        resource_type: "image",
+        folder: "Cover",
+    });
+
+    fs.unlinkSync(imageFile.path);
+
+    const imageUrl = imageResult.secure_url;
+
+    const updateAdmin = await restaurantModel.findOneAndUpdate(
+        { _id: id },
+        { coverPhoto: imageUrl },
+        { new: true }
+    );
+
+    res.status(200).send({
+        message: "Update cover successfully",
+        data: updateAdmin.cover,
+    });
+});
+
+const updateTable = asyncHandler(async (req, res) => {
+    const { id } = req.user;
+    const restaurant = await restaurantModel.findOne({ createBy: id });
+    const tableId = req.params.id;
+    const table = await tableModel.findOne({ tableId: tableId, restaurant: restaurant.restaurantId });
+
+    if (!table) {
+        res.status(404);
+        throw new Error("Table not found");
+    }
+
+    const updateTable = await tableModel.findOneAndUpdate(
+        { tableId: tableId },
+        {
+            tableName: req.body.tableName,
+            capacity: req.body.capacity
+        },
+        { new: true }
+    );
+
+    res.status(200).send({
+        message: "Update table successfully",
+        data: updateTable
+    });
+});
+
+
 const update = {
     updateRestaurant,
     updateProduct,
     checkIn,
     selectedTable,
     order,
-    payment,
-    updateInfoTable,
-    openTable,
-    closeTable,
+    pay,
     updatePost,
+    updateAvatar,
+    updateCover,
+    updateTable,
 }
 
 export default update;

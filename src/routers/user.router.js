@@ -7,6 +7,7 @@ const userRouter = Router();
 userRouter.post("/booking", UserController.create.booking);
 userRouter.post("/searchByProvince", UserController.create.getRestaurantsByProvince);
 userRouter.post("/searchByName", UserController.create.getRestaurantByName);
+userRouter.post("/booking/checkReservation", UserController.create.checkReservation);
 
 // READ
 userRouter.get("/restaurant", UserController.read.getAllRestaurants);
@@ -16,6 +17,8 @@ userRouter.get("/menu/:id", UserController.read.getAllMenus);
 userRouter.get("/booking", UserController.read.getBookings);
 userRouter.get("/booking/:id", UserController.read.getInfoBooking);
 userRouter.get("/suggest/:id", UserController.read.getSuggestRestaurants);
+userRouter.get("/otp/:id", UserController.read.getOtp);
+userRouter.get("/province", UserController.read.getProvince);
 
 // UPDATE
 userRouter.put("/booking/:id", UserController.update.updateBooking);

@@ -6,51 +6,52 @@ const restaurantSchema = new mongoose.Schema({
         default: false,
     },
     restaurantId: {
-        type: String,
+        type: mongoose.Types.ObjectId,
+        auto: true,
     },
     restaurantName: {
         type: String,
-        required: true,
     },
     province: {
-        type: String,
-        required: true,
+        type: Number,
     },
     district: {
-        type: String,
-        readOnly: true,
+        type: Number,
+    },
+    ward: {
+        type: Number,
     },
     address: {
         type: String,
-        required: true,
-    },
-    phoneNumber: {
-        type: String,
-        required: true,
     },
     openTime: {
         type: String,
-        required: true,
     },
     closeTime: {
         type: String,
-        required: true,
     },
-    services: [{
-        type: String,
-        required: true,
-    }],
     description: {
         type: String,
-        required: true,
     },
     imageUrl: {
         type: String,
-        required: true,
     },
-    imagePath: {
-        type: String,
-    },
+    menu: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Menu",
+    }],
+    booking: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Booking",
+    }],
+    employee: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Employee",
+    }],
+    table: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Table",
+    }],
     createBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Admin",

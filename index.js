@@ -4,10 +4,12 @@ import cors from "cors";
 import router from "./src/routers/router.js";
 import { connectToDatabase } from "./src/config/db.js";
 import { errorHandlerMiddleware } from "./src/middlewares/error.middleware.js";
+import cron from "node-cron";
+import { deleteBookingExpired, updateStatusTable } from "./src/controllers/auto/auto.js";
 
 const app = express();
 
-const whitelist = ["http://localhost:3000", "https://dashboard-taupe-chi.vercel.app"];
+const whitelist = ["http://localhost:3000", "http://localhost:3001", "https://dashboard-taupe-chi.vercel.app"];
 
 const corsOptions = {
     origin: function (origin, callback) {
@@ -21,8 +23,13 @@ const corsOptions = {
 
 connectToDatabase();
 
+cron.schedule("* * * * * *", async () => {
+    await deleteBookingExpired();
+    await updateStatusTable();
+});
+
 app.use(express.json());
-app.use(cors(corsOptions));
+app.use(cors("*"));
 
 app.use("/api", router);
 

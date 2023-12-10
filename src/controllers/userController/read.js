@@ -3,6 +3,7 @@ import restaurantModel from "../../models/restaurant.model.js";
 import menuModel from "../../models/menu.model.js";
 import postModel from "../../models/post.model.js";
 import bookingModel from "../../models/booking.model.js";
+import otpModel from "../../models/otp.model.js";
 
 const getAllRestaurants = asyncHandler(async (req, res) => {
     const allRestaurants = await restaurantModel.find({});
@@ -11,7 +12,6 @@ const getAllRestaurants = asyncHandler(async (req, res) => {
         data: allRestaurants,
     });
 });
-
 
 const getInfoRestaurant = asyncHandler(async (req, res) => {
     const restaurantId = req.params.id;
@@ -27,7 +27,7 @@ const getInfoRestaurant = asyncHandler(async (req, res) => {
 const getAllMenus = asyncHandler(async (req, res) => {
     const restaurantId = req.params.id;
 
-    const allMenus = await menuModel.find({ ofRestaurant: restaurantId });
+    const allMenus = await menuModel.find({ restaurant: restaurantId });
 
     res.status(200).send({
         message: "Get all menu successfully",
@@ -51,7 +51,7 @@ const getBookings = asyncHandler(async (req, res) => {
     const allBookings = [];
 
     for (const booking of bookings) {
-        const restaurant = await restaurantModel.findOne({ restaurantId: booking.ofRestaurant });
+        const restaurant = await restaurantModel.findOne({ restaurantId: booking.restaurant });
 
         if (!restaurant) {
             res.status(404);
@@ -66,7 +66,7 @@ const getBookings = asyncHandler(async (req, res) => {
             bookingTime: booking.bookingTime,
             customerNumber: booking.customerNumber,
             note: booking.note,
-            table: booking.tableId,
+            checkIn: booking.checkIn,
             restaurantName: restaurant.restaurantName,
             address: restaurant.address,
             restaurantImage: restaurant.imageUrl,
@@ -90,11 +90,15 @@ const getInfoBooking = asyncHandler(async (req, res) => {
         res.status(404);
         throw new Error("Booking not found");
     }
+
+    const menus = await menuModel.find({ restaurant: booking.restaurant });
+
     res.status(200).send({
         message: "Get info booking successfully",
         data: booking,
     });
 });
+
 // const getImageRestaurant = asyncHandler(async (req, res) => {
 //     const restaurantId = req.params.id;
 
@@ -129,6 +133,27 @@ const getSuggestRestaurants = asyncHandler(async (req, res) => {
     });
 });
 
+const getOtp = asyncHandler(async (req, res) => {
+    const bookingId = req.params.id;
+    const otp = Math.floor(100000 + Math.random() * 900000);
+    const newOtp = new otpModel({
+        otp: otp,
+        bookingId: bookingId,
+    });
+    await newOtp.save();
+    res.status(200).send({
+        message: "Get otp successfully",
+    });
+});
+
+const getProvince = asyncHandler(async (req, res) => {
+    const provinces = await restaurantModel.find({ province: { $ne: null } }, "province");
+    res.status(200).send({
+        message: "Get province successfully",
+        data: provinces,
+    });
+});
+
 const read = {
     getAllRestaurants,
     getInfoRestaurant,
@@ -137,6 +162,8 @@ const read = {
     getBookings,
     getInfoBooking,
     getSuggestRestaurants,
+    getOtp,
+    getProvince,
 }
 
 export default read;

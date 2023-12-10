@@ -1,28 +1,27 @@
 import asyncHandler from "express-async-handler";
 import bookingModel from "../../models/booking.model.js";
 import restaurantModel from "../../models/restaurant.model.js";
-import mongoose from "mongoose";
+import tableModel from "../../models/table.model.js";
 
 const booking = asyncHandler(async (req, res) => {
-    const { customerName, phoneNumber, bookingDate, bookingTime, customerNumber, menuBooking, note, ofRestaurant } = req.body;
+    const { customerName, phoneNumber, bookingDate, bookingTime, customerNumber, menu, note, ofRestaurant } = req.body;
 
     const newBooking = new bookingModel({
-        bookingId: new mongoose.Types.ObjectId(),
         customerName: customerName,
         phoneNumber: phoneNumber,
         bookingDate: bookingDate,
         bookingTime: bookingTime,
         customerNumber: customerNumber,
-        menuBooking: menuBooking,
+        menu: menu,
         note: note,
-        ofRestaurant: ofRestaurant,
+        restaurant: ofRestaurant,
     });
 
     await newBooking.save();
 
     res.status(201).send({
         message: "Create a booking successfully"
-    })
+    });
 });
 
 const getRestaurantsByProvince = asyncHandler(async (req, res) => {
@@ -59,10 +58,67 @@ const getRestaurantByName = asyncHandler(async (req, res) => {
     });
 });
 
+const checkReservation = asyncHandler(async (req, res) => {
+
+    const { customerName, phoneNumber } = req.body;
+
+    const bookings = await bookingModel.aggregate([
+        {
+            $match: {
+                customerName,
+                phoneNumber
+            }
+        },
+        {
+            $lookup: {
+                from: "restaurants",
+                localField: "restaurant",
+                foreignField: "restaurantId",
+                as: "restaurant"
+            }
+        }
+    ]);
+
+    if (!bookings.length) {
+        res.status(404);
+        throw new Error("Booking not found");
+    }
+
+    const data = bookings.map(booking => {
+
+        const restaurant = booking.restaurant[0];
+
+        return {
+            bookingId: booking.bookingId,
+            customerName: booking.customerName,
+            phoneNumber: booking.phoneNumber,
+            bookingDate: booking.bookingDate,
+            bookingTime: booking.bookingTime,
+            customerNumber: booking.customerNumber,
+            menu: booking.menu,
+            note: booking.note,
+            restaurantId: restaurant.restaurantId,
+            restaurantName: restaurant.restaurantName,
+            province: restaurant.province,
+            district: restaurant.district,
+            address: restaurant.address,
+            imageUrl: restaurant.imageUrl
+        };
+
+    });
+
+    res.status(200).json({
+        message: "Check reservation successfully",
+        data: data
+    });
+
+});
+
 const create = {
     booking,
     getRestaurantsByProvince,
     getRestaurantByName,
+    checkReservation,
 };
 
 export default create;
