@@ -9,22 +9,22 @@ import { updateStatusTable } from "./src/controllers/auto/auto.js";
 
 const app = express();
 
-const whitelist = [
-    "http://localhost:3000",
-    "http://localhost:3001",
-    "https://restaurant-booking-rosy.vercel.app/",
-    "https://admin-dashboard-six-zeta.vercel.app/",
-];
+// const whitelist = [
+//     "http://localhost:3000",
+//     "http://localhost:3001",
+//     "https://restaurant-booking-rosy.vercel.app/",
+//     "https://admin-dashboard-six-zeta.vercel.app/",
+// ];
 
-const corsOptions = {
-    origin: function (origin, callback) {
-        if (whitelist.indexOf(origin) !== -1) {
-            callback(null, true);
-        } else {
-            callback(new Error("Not allowed by CORS"));
-        }
-    },
-};
+// const corsOptions = {
+//     origin: function (origin, callback) {
+//         if (whitelist.indexOf(origin) !== -1) {
+//             callback(null, true);
+//         } else {
+//             callback(new Error("Not allowed by CORS"));
+//         }
+//     },
+// };
 
 connectToDatabase();
 
@@ -33,7 +33,13 @@ cron.schedule("* * * * * *", async () => {
 });
 
 app.use(express.json());
-app.use(cors(corsOptions));
+app.use(cors({
+    origin: '*',
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    credentials: true,
+    optionsSuccessStatus: 204,
+}));
+// app.use(cors(corsOptions));
 
 app.use("/api", router);
 
