@@ -19,6 +19,8 @@ const corsOptions = {
             callback(new Error("Not allowed by CORS"));
         }
     },
+    methors: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true,
 };
 
 connectToDatabase();
