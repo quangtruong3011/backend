@@ -9,7 +9,8 @@ import { updateStatusTable } from "./src/controllers/auto/auto.js";
 
 const app = express();
 
-// const whitelist = ["http://localhost:3000",
+// const whitelist = [
+//     "http://localhost:3000",
 //     "http://localhost:3001",
 //     "https://restaurant-booking-rosy.vercel.app/",
 //     "https://admin-dashboard-six-zeta.vercel.app/",
@@ -26,12 +27,12 @@ const app = express();
 //     },
 // };
 
-app.use(function (req, res, next) {
-    res.header("Access-Control-Allow-Origin", "*");
-    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+app.use((req, res, next) => {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, x-access-token");
     next();
 });
-
 
 connectToDatabase();
 
@@ -40,10 +41,7 @@ cron.schedule("* * * * * *", async () => {
 });
 
 app.use(express.json());
-app.use(cors({
-    origin: "*",
-    methods: ["GET", "POST", "PUT", "DELETE"],
-}));
+// app.use(cors());
 
 app.use("/api", router);
 
