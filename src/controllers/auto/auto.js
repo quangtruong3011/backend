@@ -3,24 +3,16 @@ import tableModel from "../../models/table.model.js";
 import moment from "moment";
 
 export const deleteBookingExpired = async () => {
-    const currentDate = new Date();
-    const thirtyMinutesAgo = new Date(currentDate.getTime() - 30 * 60 * 1000);
-    const currentDay = currentDate.toISOString().split("T")[0];
-    try {
-        const bookingToDelete = await bookingModel.find({
-            checkIn: false,
-            bookingTime: {
-                $lt: thirtyMinutesAgo.toISOString(),
-            },
-            bookingDate: currentDay
-        });
-        await bookingModel.deleteMany({
-            _id: {
-                $in: bookingToDelete.map((booking) => booking._id),
-            },
-        })
-    } catch (error) {
-        console.log(error);
+    const bookings = await bookingModel.find({});
+    const limit = 30;
+    for (const booking of bookings) {
+        const bookingDate = moment(booking.bookingDate).format("DD/MM/YYYY");
+        const bookingTime = moment(booking.bookingTime).format("HH:mm:ss");
+        const bookingDateTime = moment(bookingDate + "T" + bookingTime);
+        const diff = moment().diff(bookingDateTime, "minutes");
+        if (diff > limit) {
+            await bookingModel.deleteOne({ bookingId: booking.bookingId });
+        }
     }
 };
 

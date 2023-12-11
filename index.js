@@ -9,7 +9,7 @@ import { deleteBookingExpired, updateStatusTable } from "./src/controllers/auto/
 
 const app = express();
 
-const whitelist = ["http://localhost:3000", "http://localhost:3001", "https://dashboard-taupe-chi.vercel.app"];
+const whitelist = ["http://localhost:3000", "http://localhost:3001", "https://restaurant-booking-rosy.vercel.app/", "https://admin-dashboard-six-zeta.vercel.app/"];
 
 const corsOptions = {
     origin: function (origin, callback) {
@@ -24,12 +24,12 @@ const corsOptions = {
 connectToDatabase();
 
 cron.schedule("* * * * * *", async () => {
-    await deleteBookingExpired();
+    // await deleteBookingExpired();
     await updateStatusTable();
 });
 
 app.use(express.json());
-app.use(cors("*"));
+app.use(cors(corsOptions));
 
 app.use("/api", router);
 
