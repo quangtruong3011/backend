@@ -9,30 +9,23 @@ import { updateStatusTable } from "./src/controllers/auto/auto.js";
 
 const app = express();
 
-// const whitelist = [
-//     "http://localhost:3000",
-//     "http://localhost:3001",
-//     "https://restaurant-booking-rosy.vercel.app/",
-//     "https://admin-dashboard-six-zeta.vercel.app/",
-//     "https://backend-4edn.onrender.com/"
-// ];
+const whitelist = [
+    "http://localhost:3000",
+    "http://localhost:3001",
+    "https://restaurant-booking-rosy.vercel.app/",
+    "https://admin-dashboard-six-zeta.vercel.app/",
+    "https://backend-4edn.onrender.com/"
+];
 
-// const corsOptions = {
-//     origin: function (origin, callback) {
-//         if (whitelist.indexOf(origin) !== -1) {
-//             callback(null, true);
-//         } else {
-//             callback(new Error("Not allowed by CORS"));
-//         }
-//     },
-// };
-
-app.use((req, res, next) => {
-    res.setHeader("Access-Control-Allow-Origin", "*");
-    res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type, x-access-token");
-    next();
-});
+const corsOptions = {
+    origin: function (origin, callback) {
+        if (whitelist.indexOf(origin) !== -1) {
+            callback(null, true);
+        } else {
+            callback(new Error("Not allowed by CORS"));
+        }
+    },
+};
 
 connectToDatabase();
 
@@ -41,7 +34,7 @@ cron.schedule("* * * * * *", async () => {
 });
 
 app.use(express.json());
-// app.use(cors());
+app.use(cors(corsOptions));
 
 app.use("/api", router);
 
