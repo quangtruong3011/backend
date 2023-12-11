@@ -14,7 +14,6 @@ const whitelist = [
     "http://localhost:3001",
     "https://restaurant-booking-rosy.vercel.app/",
     "https://admin-dashboard-six-zeta.vercel.app/",
-    "https://backend-4edn.onrender.com/"
 ];
 
 const corsOptions = {
