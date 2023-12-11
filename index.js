@@ -1,6 +1,6 @@
 import express from "express";
 import "dotenv/config";
-// import cors from "cors";
+import cors from "cors";
 import router from "./src/routers/router.js";
 import { connectToDatabase } from "./src/config/db.js";
 import { errorHandlerMiddleware } from "./src/middlewares/error.middleware.js";
@@ -40,7 +40,10 @@ cron.schedule("* * * * * *", async () => {
 });
 
 app.use(express.json());
-// app.use(cors(corsOptions));
+app.use(cors({
+    origin: "*",
+    methods: ["GET", "POST", "PUT", "DELETE"],
+}));
 
 app.use("/api", router);
 
